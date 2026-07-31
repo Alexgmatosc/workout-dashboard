@@ -45,6 +45,23 @@ def fetch_renpho():
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
+        auth_tokens_env = os.environ.get("AUTH_TOKENS") or os.environ.get("VITE_AUTH_TOKENS") or ""
+        valid_tokens = [t.strip() for t in auth_tokens_env.split(",") if t.strip()]
+
+        if valid_tokens:
+            cookie_header = self.headers.get('Cookie', '')
+            cookies = dict(c.strip().split('=', 1) for c in cookie_header.split(';') if '=' in c)
+            token_in_cookie = cookies.get('workout_auth')
+            token_in_header = self.headers.get('x-auth-token')
+            
+            provided_token = token_in_cookie or token_in_header
+            if not provided_token or provided_token not in valid_tokens:
+                self.send_response(401)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": "Unauthorized"}).encode('utf-8'))
+                return
+
         data = fetch_renpho()
         self.send_response(200)
         self.send_header('Content-type', 'application/json')

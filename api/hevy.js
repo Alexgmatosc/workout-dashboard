@@ -1,4 +1,19 @@
 export default async function handler(req, res) {
+  const authTokens = (process.env.AUTH_TOKENS || process.env.VITE_AUTH_TOKENS || '').split(',').map(t => t.trim()).filter(Boolean);
+  
+  if (authTokens.length > 0) {
+    const cookieHeader = req.headers.cookie || '';
+    const cookies = Object.fromEntries(cookieHeader.split(';').map(c => c.trim().split('=')));
+    const tokenInCookie = cookies['workout_auth'];
+    const tokenInQuery = req.query.token;
+    const tokenInHeader = req.headers['x-auth-token'];
+    
+    const providedToken = tokenInCookie || tokenInQuery || tokenInHeader;
+    if (!providedToken || !authTokens.includes(providedToken)) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+  }
+
   const path = req.query.path || '';
   const apiKey = process.env.VITE_HEVY_API_KEY || process.env.HEVY_API_KEY || '';
   const targetUrl = `https://api.hevyapp.com/${path}`;
