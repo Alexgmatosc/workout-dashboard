@@ -2,7 +2,7 @@ const COOKIE_NAME = 'workout_auth';
 
 export const authLib = {
   getValidTokens(): string[] {
-    const tokensStr = import.meta.env.VITE_AUTH_TOKENS || '';
+    const tokensStr = import.meta.env.VITE_AUTH_TOKENS || import.meta.env.VITE_AUTH_TOKEN || 'alexander2026';
     return tokensStr.split(',').map((t: string) => t.trim()).filter(Boolean);
   },
 
@@ -51,9 +51,6 @@ export const authLib = {
 
   isAuthenticated(): boolean {
     const validTokens = this.getValidTokens();
-    // Si no hay tokens configurados en el entorno, permitir acceso
-    if (validTokens.length === 0) return true;
-
     const token = this.getStoredToken();
     return !!(token && validTokens.includes(token));
   }

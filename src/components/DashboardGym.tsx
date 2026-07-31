@@ -8,7 +8,8 @@ import { XAxis, YAxis, CartesianGrid, ResponsiveContainer, AreaChart, Area, BarC
 import { hevyService } from '@/services/hevy';
 import { renphoService, type RenphoData } from '@/services/renpho';
 import { RenphoBodyMetrics } from './RenphoBodyMetrics';
-import { Dumbbell, Calendar, Clock, TrendingUp, Flame, Bike, Waves, Sun, Moon, LayoutDashboard, Scale, Activity } from "lucide-react";
+import { authLib } from '@/lib/auth';
+import { Dumbbell, Calendar, Clock, TrendingUp, Flame, Bike, Waves, Sun, Moon, LayoutDashboard, Scale, Activity, LogOut } from "lucide-react";
 
 const getMuscleGroup = (title: string) => {
   const t = title.toLowerCase();
@@ -394,22 +395,36 @@ export default function DashboardAtleta() {
             <span>Multisport Dashboard</span>
           </div>
           
-          <button 
-            onClick={() => setDarkMode(!darkMode)}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all text-xs font-medium shadow-xs"
-          >
-            {darkMode ? (
-              <>
-                <Sun className="size-4 text-amber-500" />
-                <span>Modo Claro</span>
-              </>
-            ) : (
-              <>
-                <Moon className="size-4 text-indigo-500" />
-                <span>Modo Oscuro</span>
-              </>
-            )}
-          </button>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => setDarkMode(!darkMode)}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all text-xs font-medium shadow-xs"
+            >
+              {darkMode ? (
+                <>
+                  <Sun className="size-4 text-amber-500" />
+                  <span>Modo Claro</span>
+                </>
+              ) : (
+                <>
+                  <Moon className="size-4 text-indigo-500" />
+                  <span>Modo Oscuro</span>
+                </>
+              )}
+            </button>
+
+            <button
+              onClick={() => {
+                authLib.clearToken();
+                window.location.reload();
+              }}
+              title="Cerrar sesión / Bloquear Dashboard"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-rose-500/20 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 transition-all text-xs font-medium shadow-xs"
+            >
+              <LogOut className="size-3.5" />
+              <span>Salir</span>
+            </button>
+          </div>
         </div>
 
         {/* NAVEGACIÓN SECCIONES PRINCIPALES */}
