@@ -2,7 +2,7 @@ const COOKIE_NAME = 'workout_auth';
 
 export const authLib = {
   getValidTokens(): string[] {
-    const tokensStr = import.meta.env.VITE_AUTH_TOKENS || import.meta.env.VITE_AUTH_TOKEN || 'alexander2026';
+    const tokensStr = import.meta.env.VITE_AUTH_TOKENS || import.meta.env.VITE_AUTH_TOKEN || '62738d4846569c34a7c21318a83a460d7a8699fc6b73a18aa2d0731074533f67';
     return tokensStr.split(',').map((t: string) => t.trim()).filter(Boolean);
   },
 
