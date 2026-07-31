@@ -1,73 +1,99 @@
-# React + TypeScript + Vite
+# 🏋️ Workout & Multisport Dashboard
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Un dashboard de rendimiento deportivo y composición corporal moderno, interactivo y personal. Integra automáticamente entrenamientos de fuerza desde **Hevy API**, datos de composición corporal desde tu báscula inteligente **Renpho**, y métricas de natación y ciclismo en una sola interfaz estética con modo oscuro/claro y gráficos avanzados.
 
-Currently, two official plugins are available:
+![Dashboard Preview](public/renpho_data.json)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## ✨ Características Principales
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 📊 Dashboard Global & Gráfico de Correlación
+- **Gráfico Combinado de Doble Eje Y**: Visualiza en la misma línea temporal la relación directa entre el **Volumen de Entrenamiento en Gimnasio (kg)** y tus **Índices Corporales (Peso, % Grasa Corporal, Masa Muscular)**.
+- **Controles de Conmutación**: Filtra interactivamente entre *Volumen vs. Peso*, *Volumen vs. % Grasa* y *Volumen vs. Masa Muscular*.
+- **Heatmap de Consistencia**: Resumen visual de los días activos del mes.
 
-## Expanding the ESLint configuration
+### 🏋️ Gimnasio (Integración Hevy)
+- Sincronización de entrenamientos de fuerza y rutinas mediante **Hevy API**.
+- Cálculo de volumen total (kg cargados), duración de sesiones, repeticiones y récords personales (PRs).
+- Estimación automática de **e1RM** (1 Repetición Máxima) por ejercicio.
+- Distribución de volumen por **Grupos Musculares** (Espalda, Pecho, Piernas, Hombros, Bíceps, Tríceps, Core).
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### ⚖️ Composición Corporal (Báscula Inteligente Renpho)
+- Extracción de datos en tiempo real a través de **`renpho-api`**.
+- Tarjetas de KPIs: **Peso (kg)**, **% Grasa Corporal**, **Masa Muscular (kg)**, **IMC**, **% Agua Corporal** y **Edad Metabólica**.
+- Gráficos históricos de evolución y tabla detallada de pesadas recientes con deltas de cambio (ej. `-0.4 kg`).
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### 🏊 Natación & 🚴 Ciclismo
+- Seguimiento de metros nadados, velocidad media y desniveles en salidas ciclistas.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+---
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## 🛠️ Tecnologías Utilizadas
+
+- **Frontend**: [React 19](https://react.dev/), [TypeScript](https://www.typescriptlang.org/), [Vite](https://vite.dev/), [Tailwind CSS v4](https://tailwindcss.com/)
+- **Visualización de Datos**: [Recharts](https://recharts.org/)
+- **Iconos & Componentes**: [Lucide React](https://lucide.dev/), [Shadcn UI](https://ui.shadcn.com/)
+- **Extracción de Datos de Báscula**: Python 3 + [`renpho-api`](https://pypi.org/project/renpho-api/)
+- **Serverless / Cloud**: Vercel Functions (Node.js & Python) + `vercel.json`
+
+---
+
+## 🚀 Instalación y Uso Local
+
+### 1. Clonar e instalar dependencias
+
+```bash
+git clone https://github.com/Alexgmatosc/workout-dashboard.git
+cd workout-dashboard
+
+# Instalar dependencias de Node
+pnpm install
+
+# Crear entorno virtual de Python e instalar renpho-api
+python3 -m venv .venv
+.venv/bin/pip install renpho-api python-dotenv
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### 2. Configurar Variables de Entorno
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Crea un archivo `.env.local` en la raíz del proyecto:
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```env
+VITE_HEVY_API_KEY="tu_api_key_de_hevy"
+RENPHO_EMAIL="tu_email_de_renpho"
+RENPHO_PASSWORD="tu_password_de_renpho"
 ```
+
+### 3. Iniciar el Servidor de Desarrollo
+
+El comando `pnpm dev` ejecutará automáticamente el script de sincronización con Renpho antes de iniciar Vite:
+
+```bash
+pnpm dev
+```
+
+Si deseas sincronizar tus datos de la báscula de forma manual en cualquier momento:
+
+```bash
+pnpm run sync-renpho
+```
+
+---
+
+## ☁️ Despliegue en Vercel
+
+El proyecto viene preparado con Serverless Functions (`api/renpho.py` y `api/hevy.js`) y `vercel.json` para desplegar en un clic:
+
+1. Conecta tu repositorio de GitHub en [Vercel](https://vercel.com).
+2. Añade las siguientes **Environment Variables** en el panel de Vercel:
+   - `VITE_HEVY_API_KEY`
+   - `RENPHO_EMAIL`
+   - `RENPHO_PASSWORD`
+3. Haz clic en **Deploy**. Vercel compilará la aplicación e iniciará las funciones Serverless automáticas para Renpho y Hevy.
+
+---
+
+## 📝 Licencia
+
+Licencia MIT. Desarrollado para el seguimiento deportivo y de salud personal.
