@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "rewrites": [
+    {
+      "source": "/hevy-api/(.*)",
+      "destination": "/api/hevy?path=$1"
+    },
+    {
+      "source": "/api/renpho",
+      "destination": "/api/renpho"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}

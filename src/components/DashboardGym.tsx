@@ -4,9 +4,11 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { XAxis, YAxis, CartesianGrid, ResponsiveContainer, AreaChart, Area, BarChart, Bar, LineChart, Line, PieChart, Pie, Cell } from "recharts";
+import { XAxis, YAxis, CartesianGrid, ResponsiveContainer, AreaChart, Area, BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, ComposedChart, Tooltip as RechartsTooltip, Legend } from "recharts";
 import { hevyService } from '@/services/hevy';
-import { Dumbbell, Calendar, Clock, TrendingUp, Flame, Bike, Waves, Sun, Moon, LayoutDashboard } from "lucide-react";
+import { renphoService, type RenphoData } from '@/services/renpho';
+import { RenphoBodyMetrics } from './RenphoBodyMetrics';
+import { Dumbbell, Calendar, Clock, TrendingUp, Flame, Bike, Waves, Sun, Moon, LayoutDashboard, Scale, Activity } from "lucide-react";
 
 const getMuscleGroup = (title: string) => {
   const t = title.toLowerCase();
@@ -33,12 +35,14 @@ const MUSCLE_COLORS: Record<string, string> = {
 
 export default function DashboardAtleta() {
   // Estados de navegación y tema
-  const [activeSection, setActiveSection] = useState<'global' | 'gym' | 'swim' | 'bike'>('global');
+  const [activeSection, setActiveSection] = useState<'global' | 'gym' | 'swim' | 'bike' | 'renpho'>('global');
   const [darkMode, setDarkMode] = useState<boolean>(true); // Por defecto en oscuro
 
-  // Estados de datos (Gimnasio)
+  // Estados de datos (Gimnasio y Renpho)
   const [workouts, setWorkouts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [renphoData, setRenphoData] = useState<RenphoData | null>(null);
+  const [correlationMetric, setCorrelationMetric] = useState<'weight' | 'fat' | 'muscle'>('weight');
   const [metrics, setMetrics] = useState({ totalVolume: 0, totalDuration: 0, workoutCount: 0 });
   const [personalRecords, setPersonalRecords] = useState<any[]>([]);
   const [chartData, setChartData] = useState<any[]>([]);
@@ -134,6 +138,9 @@ export default function DashboardAtleta() {
             });
           });
         });
+
+        const rData = await renphoService.getRenphoData();
+        setRenphoData(rData);
 
         setMetrics({
           totalVolume: volumeAccumulator,
@@ -300,6 +307,65 @@ export default function DashboardAtleta() {
     };
   }, [workouts]);
 
+  const correlationData = useMemo(() => {
+    const weeklyMap: Record<string, { weekLabel: string; volumenKg: number; repsCount: number; pesoKg?: number; grasaPct?: number; musculoKg?: number; dateValue: number }> = {};
+
+    // Mapear Entrenamientos Hevy
+    workouts.forEach(w => {
+      if (!w.start_time) return;
+      const d = new Date(w.start_time);
+      const weekNum = getWeekNumber(d);
+      const year = d.getFullYear();
+      const weekKey = `${year}-W${weekNum}`;
+
+      let vol = 0;
+      let reps = 0;
+      w.exercises?.forEach((ex: any) => {
+        ex.sets?.forEach((s: any) => {
+          if (s.weight_kg && s.reps) {
+            vol += s.weight_kg * s.reps;
+            reps += s.reps;
+          }
+        });
+      });
+
+      if (!weeklyMap[weekKey]) {
+        weeklyMap[weekKey] = {
+          weekLabel: `S${weekNum}`,
+          volumenKg: 0,
+          repsCount: 0,
+          dateValue: d.getTime()
+        };
+      }
+      weeklyMap[weekKey].volumenKg += vol;
+      weeklyMap[weekKey].repsCount += reps;
+    });
+
+    // Mapear Mediciones de Báscula Renpho
+    if (renphoData && renphoData.measurements) {
+      renphoData.measurements.forEach(m => {
+        const d = new Date(m.date);
+        const weekNum = getWeekNumber(d);
+        const year = d.getFullYear();
+        const weekKey = `${year}-W${weekNum}`;
+
+        if (!weeklyMap[weekKey]) {
+          weeklyMap[weekKey] = {
+            weekLabel: `S${weekNum}`,
+            volumenKg: 0,
+            repsCount: 0,
+            dateValue: d.getTime()
+          };
+        }
+        weeklyMap[weekKey].pesoKg = m.weight_kg;
+        weeklyMap[weekKey].grasaPct = m.body_fat_percent;
+        weeklyMap[weekKey].musculoKg = m.muscle_mass_kg;
+      });
+    }
+
+    return Object.values(weeklyMap).sort((a, b) => a.dateValue - b.dateValue);
+  }, [workouts, renphoData]);
+
   if (loading) {
     return (
       <div className={`w-full min-h-screen p-8 ${darkMode ? 'dark bg-zinc-950' : 'bg-zinc-50'}`}>
@@ -347,7 +413,7 @@ export default function DashboardAtleta() {
         </div>
 
         {/* NAVEGACIÓN SECCIONES PRINCIPALES */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:flex sm:items-center bg-zinc-200/60 dark:bg-zinc-900/60 p-1 rounded-xl w-full sm:w-fit border border-zinc-200/80 dark:border-zinc-800/80">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:flex sm:items-center bg-zinc-200/60 dark:bg-zinc-900/60 p-1 rounded-xl w-full sm:w-fit border border-zinc-200/80 dark:border-zinc-800/80">
           <button
             onClick={() => setActiveSection('global')}
             className={`flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all ${activeSection === 'global' ? 'bg-white dark:bg-zinc-800 text-foreground shadow-xs' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300'}`}
@@ -361,6 +427,13 @@ export default function DashboardAtleta() {
           >
             <Dumbbell className="size-4" />
             <span>Gimnasio</span>
+          </button>
+          <button
+            onClick={() => setActiveSection('renpho')}
+            className={`flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all ${activeSection === 'renpho' ? 'bg-white dark:bg-zinc-800 text-cyan-500 shadow-xs' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300'}`}
+          >
+            <Scale className="size-4" />
+            <span>Báscula</span>
           </button>
           <button
             onClick={() => setActiveSection('swim')}
@@ -445,6 +518,79 @@ export default function DashboardAtleta() {
               </CardContent>
             </Card>
 
+            {/* GRÁFICO COMBINADO: ESFUERZO FÍSICO VS COMPOSICIÓN CORPORAL */}
+            <Card className="border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xs">
+              <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2">
+                <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                  <Activity className="text-cyan-500 size-4" />
+                  Correlación: Esfuerzo Físico (Hevy) vs Índices Corporales (Renpho)
+                </CardTitle>
+                <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-950 p-1 rounded-lg border border-zinc-200 dark:border-zinc-800">
+                  <button
+                    onClick={() => setCorrelationMetric('weight')}
+                    className={`px-2.5 py-1 text-xs rounded-md font-medium transition-all ${correlationMetric === 'weight' ? 'bg-cyan-500 text-white shadow-xs' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200'}`}
+                  >
+                    Volumen vs Peso
+                  </button>
+                  <button
+                    onClick={() => setCorrelationMetric('fat')}
+                    className={`px-2.5 py-1 text-xs rounded-md font-medium transition-all ${correlationMetric === 'fat' ? 'bg-amber-500 text-white shadow-xs' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200'}`}
+                  >
+                    Volumen vs % Grasa
+                  </button>
+                  <button
+                    onClick={() => setCorrelationMetric('muscle')}
+                    className={`px-2.5 py-1 text-xs rounded-md font-medium transition-all ${correlationMetric === 'muscle' ? 'bg-blue-500 text-white shadow-xs' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200'}`}
+                  >
+                    Volumen vs Músculo
+                  </button>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-2">
+                <div className="h-[280px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart data={correlationData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                      <CartesianGrid vertical={false} className="stroke-zinc-200 dark:stroke-zinc-800" strokeDasharray="3 3" />
+                      <XAxis dataKey="weekLabel" tickLine={false} axisLine={false} className="text-[10px] fill-muted-foreground" />
+                      
+                      {/* Eje Y Izquierdo: Volumen Levantado (kg) */}
+                      <YAxis yAxisId="left" tickLine={false} axisLine={false} className="text-[10px] fill-orange-500" tickFormatter={(v) => `${v >= 1000 ? (v/1000).toFixed(1) + 'k' : v} kg`} />
+                      
+                      {/* Eje Y Derecho: Métricas de Renpho */}
+                      <YAxis
+                        yAxisId="right"
+                        orientation="right"
+                        tickLine={false}
+                        axisLine={false}
+                        className="text-[10px] fill-cyan-400"
+                        domain={correlationMetric === 'fat' ? ['dataMin - 1', 'dataMax + 1'] : ['dataMin - 1', 'dataMax + 1']}
+                        tickFormatter={(v) => correlationMetric === 'fat' ? `${v}%` : `${v} kg`}
+                      />
+
+                      <RechartsTooltip
+                        contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '0.5rem', color: '#f8fafc', fontSize: '12px' }}
+                      />
+                      <Legend wrapperStyle={{ fontSize: 12, paddingTop: 6 }} />
+
+                      {/* Barras de Volumen de Gimnasio */}
+                      <Bar yAxisId="left" dataKey="volumenKg" name="Volumen Hevy (kg)" fill="#f97316" radius={[4, 4, 0, 0]} maxBarSize={36} opacity={0.85} />
+
+                      {/* Línea de Índice Corporal */}
+                      {correlationMetric === 'weight' && (
+                        <Line yAxisId="right" type="monotone" dataKey="pesoKg" name="Peso Renpho (kg)" stroke="#06b6d4" strokeWidth={3} dot={{ r: 4, fill: "#06b6d4" }} activeDot={{ r: 6 }} />
+                      )}
+                      {correlationMetric === 'fat' && (
+                        <Line yAxisId="right" type="monotone" dataKey="grasaPct" name="Grasa Corporal (%)" stroke="#f59e0b" strokeWidth={3} dot={{ r: 4, fill: "#f59e0b" }} activeDot={{ r: 6 }} />
+                      )}
+                      {correlationMetric === 'muscle' && (
+                        <Line yAxisId="right" type="monotone" dataKey="musculoKg" name="Masa Muscular (kg)" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4, fill: "#3b82f6" }} activeDot={{ r: 6 }} />
+                      )}
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+
             <Card className="border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xs">
               <CardHeader>
                 <CardTitle className="text-sm font-semibold">Consistencia de Entrenamiento</CardTitle>
@@ -472,6 +618,15 @@ export default function DashboardAtleta() {
                 </div>
               </CardContent>
             </Card>
+          </div>
+        )}
+
+        {/* ======================================================== */}
+        {/* ================= CONTENIDO: RENPHO ===================== */}
+        {/* ======================================================== */}
+        {activeSection === 'renpho' && (
+          <div className="animate-fadeIn">
+            <RenphoBodyMetrics data={renphoData} loading={loading} />
           </div>
         )}
 

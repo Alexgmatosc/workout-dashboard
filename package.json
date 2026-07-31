@@ -4,10 +4,11 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": ".venv/bin/python scripts/fetch_renpho.py && vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "sync-renpho": ".venv/bin/python scripts/fetch_renpho.py"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.2.9",
